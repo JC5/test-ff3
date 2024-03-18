@@ -7,8 +7,7 @@ on:
         description: 'Version to release'
         required: true
         default: 'develop'
-  schedule:
-    - cron:  '15 0 * * MON,THU'
+
 
 jobs:
   build:
