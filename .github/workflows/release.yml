@@ -67,8 +67,15 @@ jobs:
           composer validate --strict
           composer update --no-dev --no-scripts --no-plugins -q
           sudo chown -R runner:docker resources/lang
+      - name: Zip release
+        run: |
+          rm -rf vendor composer.lock
+          composer validate --strict
+          composer update --no-dev --no-scripts --no-plugins -q
+          sudo chown -R runner:docker resources/lang
       - name: Release
         run: |
+          return 0
           sudo timedatectl set-timezone Europe/Amsterdam
           git config user.name github-actions
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
@@ -102,6 +109,9 @@ jobs:
             git merge main
             git push
           fi
+
+          gh release upload $version readme.md
+
         env:
           GH_TOKEN: ${{ github.token }}
           version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
