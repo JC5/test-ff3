@@ -69,10 +69,9 @@ jobs:
           sudo chown -R runner:docker resources/lang
       - name: Zip release
         run: |
-          rm -rf vendor
           pwd
-          ls
-          zip -rq release.zip . -x .git
+          ls -lah
+          zip -rq release.zip . -x "*.git*" "*.github*"
       - name: Release
         run: |
           sudo timedatectl set-timezone Europe/Amsterdam
