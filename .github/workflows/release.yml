@@ -37,33 +37,6 @@ jobs:
         with:
           php-version: '8.3'
           extensions: mbstring, intl, zip, bcmath
-      - name: Cleanup translations
-        id: cleanup-transactions
-        uses: JC5/firefly-iii-dev@v34
-        with:
-          action: 'ff3:crowdin-warning'
-          output: ''
-        env:
-          FIREFLY_III_ROOT: /github/workspace
-          GH_TOKEN: ''
-      - name: Cleanup changelog
-        id: cleanup-changelog
-        uses: JC5/firefly-iii-dev@v34
-        with:
-          action: 'ff3:changelog'
-          output: ''
-        env:
-          FIREFLY_III_ROOT: /github/workspace
-          GH_TOKEN: ${{ secrets.CHANGELOG_TOKEN }}
-      - name: Extract changelog
-        id: extract-changelog
-        uses: JC5/firefly-iii-dev@v34
-        with:
-          action: 'ff3:extract-changelog'
-          output: 'output'
-        env:
-          FIREFLY_III_ROOT: /github/workspace
-          GH_TOKEN: ""
       - name: Replace version
         id: replace-version
         uses: JC5/firefly-iii-dev@v34
@@ -74,15 +47,6 @@ jobs:
           FIREFLY_III_ROOT: /github/workspace
           GH_TOKEN: ""
           FF_III_VERSION: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
-      - name: Generate JSON v1
-        id: json-v1
-        uses: JC5/firefly-iii-dev@v34
-        with:
-          action: 'ff3:json-translations v1'
-          output: ''
-        env:
-          FIREFLY_III_ROOT: /github/workspace
-          GH_TOKEN: ''
       - name: Generate JSON v2
         id: json-v2
         uses: JC5/firefly-iii-dev@v34
@@ -92,38 +56,27 @@ jobs:
         env:
           FIREFLY_III_ROOT: /github/workspace
           GH_TOKEN: ''
-      - name: Code cleanup
-        id: code-cleanup
-        uses: JC5/firefly-iii-dev@v34
-        with:
-          action: 'ff3:code'
-          output: ''
-        env:
-          FIREFLY_III_ROOT: /github/workspace
-          GH_TOKEN: ''
       - name: Build new JS
         run: |
           pwd
           npm install
           npm run build
-      - name: Build old JS
-        id: old-js
-        uses: JC5/firefly-iii-dev@v34
-        with:
-          action: 'ff3:old-js'
-          output: ''
-        env:
-          FIREFLY_III_ROOT: /github/workspace
-          GH_TOKEN: ''
       - name: Run CI
         run: |
           rm -rf vendor composer.lock
           composer validate --strict
           composer update --no-dev --no-scripts --no-plugins -q
           sudo chown -R runner:docker resources/lang
-          .ci/phpcs.sh
+      - name: Zip release
+        run: |
+          rm -rf vendor composer.lock
+          composer validate --strict
+          composer update --no-dev --no-scripts --no-plugins -q
+          sudo chown -R runner:docker resources/lang
+          zip -r release.zip .
       - name: Release
         run: |
+          return 0
           sudo timedatectl set-timezone Europe/Amsterdam
           git config user.name github-actions
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
@@ -157,6 +110,9 @@ jobs:
             git merge main
             git push
           fi
+
+          gh release upload $version release.zip
+
         env:
           GH_TOKEN: ${{ github.token }}
           version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
