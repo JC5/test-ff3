@@ -37,17 +37,6 @@ jobs:
         with:
           php-version: '8.3'
           extensions: mbstring, intl, zip, bcmath
-      - name: crowdin action
-        uses: crowdin/github-action@v1
-        with:
-          upload_sources: true
-          download_translations: true
-          push_translations: false
-          push_sources: false
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          CROWDIN_PROJECT_NR: ${{ secrets.CROWDIN_PROJECT_NR }}
-          CROWDIN_TOKEN: ${{ secrets.CROWDIN_TOKEN }}
       - name: Cleanup translations
         id: cleanup-transactions
         uses: JC5/firefly-iii-dev@v34
