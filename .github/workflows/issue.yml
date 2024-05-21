@@ -20,3 +20,4 @@ jobs:
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_USER: ${{ github.event.issue.user.login }}
           REPOSITORY: "firefly-iii/firefly-iii"
+          GITTER_TOKEN: ${{ secrets.GITTER_TOKEN }}
