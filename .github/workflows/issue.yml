@@ -4,14 +4,14 @@ on:
     types:
       - opened
 jobs:
-  add-comment:
+  post-to-gitter:
     runs-on: ubuntu-latest
     steps:
-      - name: Send to Gitter
+      - name: Send issue to Gitter
         id: replace-version
         uses: JC5/firefly-iii-dev@main
         with:
-          action: 'ff3:post-to-gitter'
+          action: 'ff3:post-to-gitter issue'
           output: ''
         env:
           FIREFLY_III_ROOT: /github/workspace
