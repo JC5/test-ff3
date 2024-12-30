@@ -143,7 +143,7 @@ jobs:
           # describe the development release.
           if [[ "develop" == "$version" ]]; then
             echo 'Develop release.'
-            rm output.txt
+            rm -f output.txt
             touch output.txt
             sudo chown -R runner:docker output.txt
             echo "Weekly development release of Firefly III with the latest fixes, translations and features. Docker users can find this release under the \`develop\` tag." >> output.txt
@@ -158,7 +158,7 @@ jobs:
           # describe a branch release
           if [[ "$version" == branch* ]]; then
             echo 'Branch release.'
-            rm output.txt
+            rm -f output.txt
             touch output.txt
             sudo chown -R runner:docker output.txt
             echo "Irregular BRANCH release of Firefly III. This release contains specific features or changes. Docker users can find this release under the \`$version\` tag." >> output.txt
@@ -186,7 +186,7 @@ jobs:
           # describe alpha release
           if [[ "$version" == *alpha* ]]; then
             echo 'ALPHA release.'
-            rm output.txt
+            rm -f output.txt
             touch output.txt
             sudo chown -R runner:docker output.txt
             echo "Very early ALPHA release of Firefly III. This release contains specific features or changes. Docker users can find this release under the \`$version\` tag." >> output.txt
@@ -204,7 +204,7 @@ jobs:
           # describe beta release
           if [[ "$version" == *beta* ]]; then
             echo 'BETA release.'
-            rm output.txt
+            rm -f output.txt
             touch output.txt
             sudo chown -R runner:docker output.txt
             echo "Very early BETA release of Firefly III. This release contains specific features or changes. Docker users can find this release under the \`$version\` tag." >> output.txt
@@ -286,12 +286,12 @@ jobs:
             gh release upload $releaseName HEAD.txt
 
             # remove all temporary files
-            rm output.txt
-            rm HEAD.txt
-            rm $zipName
-            rm $zipName.sha256
-            rm $tarName
-            rm $tarName.sha256
+            rm -f output.txt
+            rm -f HEAD.txt
+            rm -f $zipName
+            rm -f $zipName.sha256
+            rm -f $tarName
+            rm -f $tarName.sha256
 
             # merge main back into develop
             git checkout develop
