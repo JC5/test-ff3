@@ -227,9 +227,20 @@ jobs:
           fi
         env:
           version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
+      - name: Merge all into working branch
+        run: |
+          MERGE_INTO=develop
+            if [[ "$version" == branch* ]]; then
+                MERGE_INTO=$version
+            fi
+
+          echo "Merge all changes from $BRANCH_NAME back into '$MERGE_INTO' using a PR"
+          gh pr create -B $MERGE_INTO -H $BRANCH_NAME --title "🤖 Automatic PR to merge all changes into the '$MERGE_INTO' branch." --body '🤖 Created by GitHub action'
+          gh pr merge -b "🤖 Automatically merge the PR into the $MERGE_INTO branch." -d --rebase
+          exit 1
+
       - name: Create release
         run: |
-          exit 1
           # zip and tar everything
           echo 'Zip and tar...'
           zip -rq $zipName . -x "*.git*" "*.ci*" "*.github*" "*node_modules*" "*output.txt*" "*Procfile*" "*crowdin.yml*" "*sonar-project.properties*"
