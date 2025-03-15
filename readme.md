@@ -27,6 +27,8 @@
     <a href="https://github.com/firefly-iii/firefly-iii/discussions">Ask questions</a>
   </p>
 
+Do a commit.
+
 <!-- MarkdownTOC autolink="true" -->
 
 - [About Firefly III](#about-firefly-iii)
