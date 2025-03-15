@@ -310,6 +310,7 @@ jobs:
               gh release create $releaseName -F output.txt -t "$releaseName" --verify-tag
             fi
 
+            echo 'add files to release'
             # add archive files to release
             gh release upload $releaseName $zipName
             gh release upload $releaseName $tarName
@@ -335,9 +336,15 @@ jobs:
             rm -f $tarName
             rm -f $tarName.sha256
 
+            echo 'Current branch:'
+            git branch --show-current
+
             # create a PR between develop and main.
+            echo 'create PR between develop and main'
             gh pr create -B main -H develop --title "🤖 Automatic PR to merge all changes into the main branch." --body '🤖 Created by GitHub action'
+            echo 'checkout main'
             git checkout main
+            echo 'merge PR'
             gh pr merge -b "🤖 Automatically merge the PR into the main branch." -d --rebase
 
             # merge main back into develop
