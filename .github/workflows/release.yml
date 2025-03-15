@@ -263,9 +263,11 @@ jobs:
           version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
       - name: Create archives
         run: |
-          echo 'Zip and tar...'
+          echo "Create zip file $zipName"
           zip -rq $zipName . -x "*.git*" "*.ci*" "*.github*" "*node_modules*" "*output.txt*" "*Procfile*" "*crowdin.yml*" "*sonar-project.properties*"
           touch $tarName
+
+          echo "Create tar file $tarName"
           tar --exclude=$tarName --exclude=$zipName --exclude='./.git' --exclude='./.ci' --exclude='./.github' --exclude='./node_modules' --exclude='./output.txt' --exclude='./Procfile' --exclude='../crowdin.yml' --exclude='./sonar-project.properties' -czf $tarName .
           # add sha256 sum
           echo 'Sha sum ...'
