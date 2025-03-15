@@ -56,93 +56,6 @@ jobs:
         with:
           php-version: ${{ github.event.inputs.phpversion }}
           extensions: mbstring, intl, zip, bcmath
-      - name: crowdin action
-        uses: crowdin/github-action@v2
-        with:
-          upload_sources: true
-          download_translations: true
-          push_translations: false
-          push_sources: false
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          CROWDIN_PROJECT_NR: ${{ secrets.CROWDIN_PROJECT_NR }}
-          CROWDIN_TOKEN: ${{ secrets.CROWDIN_TOKEN }}
-      - name: Cleanup changelog
-        id: cleanup-changelog
-        uses: JC5/firefly-iii-dev@main
-        with:
-          action: 'ff3:changelog'
-          output: ''
-        env:
-          FIREFLY_III_ROOT: /github/workspace
-          GH_TOKEN: ${{ secrets.CHANGELOG_TOKEN }}
-      - name: "Create THANKS.md"
-        id: thank-you
-        uses: JC5/firefly-iii-dev@main
-        with:
-          action: 'ff3:thank-you'
-          output: ''
-        env:
-          FIREFLY_III_ROOT: /github/workspace
-          GH_TOKEN: ''
-      - name: Extract changelog
-        id: extract-changelog
-        uses: JC5/firefly-iii-dev@main
-        with:
-          action: 'ff3:extract-changelog'
-          output: 'output'
-        env:
-          FIREFLY_III_ROOT: /github/workspace
-          GH_TOKEN: ""
-      - name: Replace version
-        id: replace-version
-        uses: JC5/firefly-iii-dev@main
-        with:
-          action: 'ff3:version'
-          output: ''
-        env:
-          FIREFLY_III_ROOT: /github/workspace
-          GH_TOKEN: ""
-          FF_III_VERSION: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
-      - name: Generate JSON v1
-        id: json-v1
-        uses: JC5/firefly-iii-dev@main
-        with:
-          action: 'ff3:json-translations v1'
-          output: ''
-        env:
-          FIREFLY_III_ROOT: /github/workspace
-          GH_TOKEN: ''
-      - name: Generate JSON v2
-        id: json-v2
-        uses: JC5/firefly-iii-dev@main
-        with:
-          action: 'ff3:json-translations v2'
-          output: ''
-        env:
-          FIREFLY_III_ROOT: /github/workspace
-          GH_TOKEN: ''
-      - name: Code cleanup
-        id: code-cleanup
-        uses: JC5/firefly-iii-dev@main
-        with:
-          action: 'ff3:code'
-          output: ''
-        env:
-          FIREFLY_III_ROOT: /github/workspace
-          GH_TOKEN: ''
-      - name: Build JS
-        run: |
-          npm install
-          npm run prod  --workspace=v1
-          npm run build --workspace=v2
-          npm update
-      - name: Run CI
-        run: |
-          rm -rf vendor composer.lock
-          composer update --no-dev --no-scripts --no-plugins -q
-          sudo chown -R runner:docker resources/lang
-          .ci/phpcs.sh || true
       - name: Release
         run: |
           # do some configuration
@@ -151,6 +64,8 @@ jobs:
           git config user.email release@firefly-iii.org
           git config advice.addIgnoredFile false
           git config push.autoSetupRemote true
+
+          echo $(date) > temp-file.txt
 
           # set some variables
           releaseName=$version
