@@ -76,7 +76,11 @@ jobs:
           # update composer (again)
           composer update --no-dev --no-scripts --no-plugins
           composer dump-autoload
-
+        env:
+          GH_TOKEN: ${{ github.token }}
+          version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
+      - name: ReleaseContinue
+        run: |
           # if this is a develop build, slightly different variable names.
           if [[ "develop" == "$version" ]]; then
             #[[ -z $(git status --untracked-files=normal --porcelain) ]] && echo "this branch is clean, no need to push..." && exit 0;
