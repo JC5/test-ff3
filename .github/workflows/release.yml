@@ -249,6 +249,15 @@ jobs:
           # create a branch release:
           if [[ "$version" == branch* ]]; then
 
+            # create a PR and merge it right away into branch-XYZ.
+            gh pr create -B $version -H $BRANCHNAME --title "🤖 Automatic PR to merge all changes into the '$version'-branch." --body '🤖 Created by GitHub action'
+            gh pr merge -b "🤖 Automatically merge the PR into the '$version'-branch." -d --rebase
+
+            # pull the changes from the branch-* branch.
+            git checkout $version
+            git merge origin/$version
+            git pull
+
             # create the release:
             echo "Create branch release."
             git tag -a $releaseName -m "Branch release '$version' on $(date +'%Y-%m-%d')"
