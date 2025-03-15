@@ -144,6 +144,8 @@ jobs:
           echo "Auto commit on branch '$(git branch --show-current)'."
           git commit -m "🤖 Auto commit for release '$version' on $(date +'%Y-%m-%d')" || true
           git push
+        env:
+          version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
       - name: Describe new release
         run: |
           # describe the development release.
