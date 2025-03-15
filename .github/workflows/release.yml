@@ -29,6 +29,11 @@ jobs:
           passphrase: ${{ secrets.PASSPHRASE }}
           git_user_signingkey: true
           git_commit_gpgsign: true
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ github.event.inputs.phpversion }}
+          extensions: mbstring, intl, zip, bcmath
       - name: Switch and pull
         run: |
           #
@@ -44,15 +49,9 @@ jobs:
           git checkout --track origin/develop
           git pull
           echo "Current branch is $(git branch --show-current)"
-          exit 1
         env:
           version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ github.event.inputs.phpversion }}
-          extensions: mbstring, intl, zip, bcmath
-      - name: Configure
+      - name: Configure Git
         run: |
           # do some configuration
           sudo timedatectl set-timezone Europe/Amsterdam
@@ -61,15 +60,13 @@ jobs:
           git config advice.addIgnoredFile false
           git config push.autoSetupRemote true
 
+          # debug line.
           echo $(date) > temp-file.txt
-      - name: Composer
+      - name: Update composer packages
         run: |
           composer update --no-dev --no-scripts --no-plugins
           composer dump-autoload
-        env:
-          GH_TOKEN: ${{ github.token }}
-          version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
-      - name: Build
+      - name: Calculate variables
         run: |
 
           # set some variables
@@ -125,6 +122,16 @@ jobs:
 
           echo "Temporary branch name is '$BRANCH_NAME'."
 
+          # share variables with next step.
+          echo "releaseName=$releaseName" >> "$GITHUB_ENV"
+          echo "originalName=$originalName" >> "$GITHUB_ENV"
+          echo "zipName=$zipName" >> "$GITHUB_ENV"
+          echo "tarName=$tarName" >> "$GITHUB_ENV"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
+        env:
+          version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
+      - name: Commit all changes
+        run: |
           # add all content, except output.txt (this contains the changelog and/or the download instructions)
           echo 'Add all and reset output.txt'
           git add -A
@@ -134,28 +141,14 @@ jobs:
           fi
 
           # push to a new branch.
-          echo "Auto commit on branch $(git branch --show-current)"
+          echo "Auto commit on branch '$(git branch --show-current)'."
           git commit -m "🤖 Auto commit for release '$version' on $(date +'%Y-%m-%d')" || true
           git push
-
-          # zip and tar everything
-          echo 'Zip and tar...'
-          zip -rq $zipName . -x "*.git*" "*.ci*" "*.github*" "*node_modules*" "*output.txt*" "*Procfile*" "*crowdin.yml*" "*sonar-project.properties*"
-          touch $tarName
-          tar --exclude=$tarName --exclude=$zipName --exclude='./.git' --exclude='./.ci' --exclude='./.github' --exclude='./node_modules' --exclude='./output.txt' --exclude='./Procfile' --exclude='../crowdin.yml' --exclude='./sonar-project.properties' -czf $tarName .
-
-          # add sha256 sum
-          echo 'Sha sum ...'
-          sha256sum -b $zipName > $zipName.sha256
-          sha256sum -b $tarName > $tarName.sha256
-
-          # add signatures:
-          gpg --armor --detach-sign $zipName
-          gpg --armor --detach-sign $tarName
-
+      - name: Describe new release
+        run: |
           # describe the development release.
           if [[ "develop" == "$version" ]]; then
-            echo 'Develop release.'
+            echo 'Describe the latest develop release'
             rm -f output.txt
             touch output.txt
             sudo chown -R runner:docker output.txt
@@ -170,7 +163,7 @@ jobs:
           fi
           # describe a branch release
           if [[ "$version" == branch* ]]; then
-            echo 'Branch release.'
+            echo 'Describe a branch release'
             rm -f output.txt
             touch output.txt
             sudo chown -R runner:docker output.txt
@@ -185,7 +178,7 @@ jobs:
           fi
           # describe the main release
           if [[ "develop" != "$version" ]] && [[ "$version" != branch* ]] && [[ "$version" != *alpha* ]] && [[ "$version" != *beta* ]]; then
-            echo 'Main release.'
+            echo 'Describe the latest release'
             touch output.txt
             sudo chown -R runner:docker output.txt
             echo '' >> output.txt
@@ -199,7 +192,7 @@ jobs:
 
           # describe alpha release
           if [[ "$version" == *alpha* ]]; then
-            echo 'ALPHA release.'
+            echo 'Describe an ALPHA release'
             rm -f output.txt
             touch output.txt
             sudo chown -R runner:docker output.txt
@@ -217,7 +210,7 @@ jobs:
 
           # describe beta release
           if [[ "$version" == *beta* ]]; then
-            echo 'BETA release.'
+            echo 'Describe a BETA release'
             rm -f output.txt
             touch output.txt
             sudo chown -R runner:docker output.txt
@@ -232,6 +225,25 @@ jobs:
             echo "* The releases are signed, and you can verify them using the [Firefly III releases PGP key](https://docs.firefly-iii.org/explanation/more-information/signatures/)." >> output.txt
 
           fi
+        env:
+          version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
+      - name: Create release
+
+          exit 1
+          # zip and tar everything
+          echo 'Zip and tar...'
+          zip -rq $zipName . -x "*.git*" "*.ci*" "*.github*" "*node_modules*" "*output.txt*" "*Procfile*" "*crowdin.yml*" "*sonar-project.properties*"
+          touch $tarName
+          tar --exclude=$tarName --exclude=$zipName --exclude='./.git' --exclude='./.ci' --exclude='./.github' --exclude='./node_modules' --exclude='./output.txt' --exclude='./Procfile' --exclude='../crowdin.yml' --exclude='./sonar-project.properties' -czf $tarName .
+
+          # add sha256 sum
+          echo 'Sha sum ...'
+          sha256sum -b $zipName > $zipName.sha256
+          sha256sum -b $tarName > $tarName.sha256
+
+          # add signatures:
+          gpg --armor --detach-sign $zipName
+          gpg --armor --detach-sign $tarName
 
           # create a development release:
           if [[ "develop" == "$version" ]]; then
