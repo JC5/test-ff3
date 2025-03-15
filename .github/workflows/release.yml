@@ -337,6 +337,7 @@ jobs:
 
             # create a PR between develop and main.
             gh pr create -B main -H develop --title "🤖 Automatic PR to merge all changes into the main branch." --body '🤖 Created by GitHub action'
+            git checkout main
             gh pr merge -b "🤖 Automatically merge the PR into the main branch." -d --rebase
 
             # merge main back into develop
