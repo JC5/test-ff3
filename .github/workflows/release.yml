@@ -38,7 +38,7 @@ jobs:
           elif [[ "$version" == branch* ]]; then
             PULLBRANCH=${version:7}
             echo "The branch is '$PULLBRANCH' ($version)"
-            git checkout --track origin/$PULLBRANCH
+            git checkout --track origin/$version
             git pull
           else
             echo "The branch is 'main'"
