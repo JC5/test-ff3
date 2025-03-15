@@ -31,24 +31,24 @@ jobs:
           git_commit_gpgsign: true
       - name: Switch branch
         run: |
+          echo "Version is '$version', check out 'origin/$version'-branch"
           if [[ "develop" == "$version" ]]; then
-            echo "The branch is 'develop'"
             git checkout --track origin/develop
             git pull
           elif [[ "$version" == branch* ]]; then
             PULLBRANCH=${version:7}
-            echo "The branch is '$PULLBRANCH' ($version)"
+            echo "Version is '$version', check out 'origin/$version'-branch"
             git checkout --track origin/$version
             git pull
           else
-            echo "The branch is 'main'"
-            git config user.name github-actions
-            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+            echo "Version is '$version', check out 'origin/develop'-branch"
             git checkout --track origin/develop
             git pull
-            git checkout main
-            git merge develop
+            # git checkout main
+            # git merge develop
           fi
+          echo 'Current branch:'
+          git branch --show-current
         env:
           version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
       - name: Setup PHP
