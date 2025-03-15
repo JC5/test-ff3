@@ -247,8 +247,12 @@ jobs:
           git status
           echo "Current branch '$(git branch --show-current)'."
 
+          if [[ "develop" != "$version" ]] || [[ "$version" != branch* ]]; then
+            echo "Go for PROD"
+            exit 1
+          fi
+          echo "DONE!"
           exit 1
-
         env:
           GH_TOKEN: ${{ github.token }}
           version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
