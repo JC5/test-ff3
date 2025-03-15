@@ -61,7 +61,7 @@ jobs:
           git config push.autoSetupRemote true
 
           # debug line.
-          echo $(date) > temp-file.txt
+          # echo $(date) > temp-file.txt
       - name: Update composer packages
         run: |
           composer update --no-dev --no-scripts --no-plugins
