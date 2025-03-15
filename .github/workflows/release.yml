@@ -248,6 +248,11 @@ jobs:
           echo "Current branch '$(git branch --show-current)'."
 
           if [[ "develop" != "$version" ]] || [[ "$version" != branch* ]]; then
+            git checkout main
+            git merge origin/main
+            git pull
+            git status
+
             echo "Also merge everything into main since this is a release."
             gh pr create -B main -H develop --title "🤖 Automatic PR to merge all changes into the main branch." --body '🤖 Created by GitHub action'
             gh pr merge -b "🤖 Automatically merge the PR into the main branch." --rebase
