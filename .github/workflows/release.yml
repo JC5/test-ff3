@@ -228,7 +228,7 @@ jobs:
         env:
           version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
       - name: Create release
-
+        run: |
           exit 1
           # zip and tar everything
           echo 'Zip and tar...'
