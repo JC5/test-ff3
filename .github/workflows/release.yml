@@ -47,8 +47,7 @@ jobs:
             # git checkout main
             # git merge develop
           fi
-          echo 'Current branch:'
-          git branch --show-current
+          echo "Current branch is $(git branch --show-current)"
         env:
           version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
       - name: Setup PHP
@@ -116,21 +115,29 @@ jobs:
              tagFound=false
             fi
           done
-          echo "Will use tag and release name $releaseName."
+
+          # set some variables
+          echo "Release name is $releaseName."
+          echo "Original name is $originalName."
+          echo "Zip name is $zipName."
+          echo "Tar name is $tarName."
 
           # create a new branch to store the difference in.
-          BRANCHNAME=release-$(date +'%s')
-          git checkout -b $BRANCHNAME
+          BRANCH_NAME=release-$(date +'%s')
+          git checkout -b $BRANCH_NAME
+
+          echo "Temporary branch name is '$BRANCH_NAME'."
 
           # add all content, except output.txt (this contains the changelog and/or the download instructions)
           echo 'Add all and reset output.txt'
           git add -A
           if test -f "output.txt"; then
+            echo 'output.txt exists, reset it.'
             git reset output.txt
           fi
 
           # push to a new branch.
-
+          echo "Auto commit on branch $(git branch --show-current)"
           git commit -m "🤖 Auto commit for release '$version' on $(date +'%Y-%m-%d')" || true
           git push
 
@@ -233,7 +240,7 @@ jobs:
           if [[ "develop" == "$version" ]]; then
 
             # create PR and merge it right away into develop.
-            gh pr create -B develop -H $BRANCHNAME --title '🤖 Automatic PR to merge all changes into the develop branch.' --body '🤖 Created by GitHub action'
+            gh pr create -B develop -H $BRANCH_NAME --title '🤖 Automatic PR to merge all changes into the develop branch.' --body '🤖 Created by GitHub action'
             gh pr merge -b '🤖 Automatically merge the PR into the develop branch.' -d --rebase
 
             # pull the changes from the develop branch.
@@ -256,7 +263,7 @@ jobs:
           if [[ "$version" == branch* ]]; then
 
             # create a PR and merge it right away into branch-XYZ.
-            gh pr create -B $version -H $BRANCHNAME --title "🤖 Automatic PR to merge all changes into the '$version'-branch." --body '🤖 Created by GitHub action'
+            gh pr create -B $version -H $BRANCH_NAME --title "🤖 Automatic PR to merge all changes into the '$version'-branch." --body '🤖 Created by GitHub action'
             gh pr merge -b "🤖 Automatically merge the PR into the '$version'-branch." -d --rebase
 
             # pull the changes from the branch-* branch.
@@ -295,6 +302,11 @@ jobs:
             gh release upload $releaseName HEAD.txt
           else
             echo 'MAIN (real) release'
+
+            # create PR and merge it right away into develop.
+            gh pr create -B develop -H $BRANCH_NAME --title '🤖 Automatic PR to merge all changes into the develop branch.' --body '🤖 Created by GitHub action'
+            gh pr merge -b '🤖 Automatically merge the PR into the develop branch.' -d --rebase
+
             git tag -a $releaseName -m "Here be changelog"
             git push origin $releaseName
 
