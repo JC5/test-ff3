@@ -29,34 +29,29 @@ jobs:
           passphrase: ${{ secrets.PASSPHRASE }}
           git_user_signingkey: true
           git_commit_gpgsign: true
-      - name: Switch branch
-        run: |
-          if [[ "develop" == "$version" ]]; then
-            echo "The branch is 'develop'"
-            git checkout --track origin/develop
-            git pull
-          elif [[ "$version" == branch* ]]; then
-            PULLBRANCH=${version:7}
-            echo "The branch is '$PULLBRANCH' ($version)"
-            git checkout --track origin/$PULLBRANCH
-            git pull
-          else
-            echo "The branch is 'main'"
-            git config user.name github-actions
-            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-            git checkout --track origin/develop
-            git pull
-            git checkout main
-            git merge develop
-          fi
-        env:
-          version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ github.event.inputs.phpversion }}
           extensions: mbstring, intl, zip, bcmath
-      - name: Release
+      - name: Switch and pull
+        run: |
+          #
+          # Always check out origin/develop, unless its a branch release.
+          #
+          BRANCH_TO_PULL=origin/develop
+          if [[ "$version" == branch* ]]; then
+            BRANCH_TO_PULL=origin/$version
+          fi
+
+          echo "Version is '$version', check out '$BRANCH_TO_PULL'-branch"
+
+          git checkout --track origin/develop
+          git pull
+          echo "Current branch is $(git branch --show-current)"
+        env:
+          version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
+      - name: Configure Git
         run: |
           # do some configuration
           sudo timedatectl set-timezone Europe/Amsterdam
@@ -65,17 +60,20 @@ jobs:
           git config advice.addIgnoredFile false
           git config push.autoSetupRemote true
 
+          # debug line.
           echo $(date) > temp-file.txt
+      - name: Update composer packages
+        run: |
+          composer update --no-dev --no-scripts --no-plugins
+          composer dump-autoload
+      - name: Calculate variables
+        run: |
 
           # set some variables
           releaseName=$version
           originalName=$version
           zipName=FireflyIII-$version.zip
           tarName=FireflyIII-$version.tar.gz
-
-          # update composer (again)
-          composer update --no-dev --no-scripts --no-plugins
-          composer dump-autoload
 
           # if this is a develop build, slightly different variable names.
           if [[ "develop" == "$version" ]]; then
@@ -111,42 +109,48 @@ jobs:
              tagFound=false
             fi
           done
-          echo "Will use tag and release name $releaseName."
+
+          # set some variables
+          echo "Release name is $releaseName."
+          echo "Original name is $originalName."
+          echo "Zip name is $zipName."
+          echo "Tar name is $tarName."
 
           # create a new branch to store the difference in.
-          BRANCHNAME=release-$(date +'%s')
-          git checkout -b $BRANCHNAME
+          BRANCH_NAME=release-$(date +'%s')
+          git checkout -b $BRANCH_NAME
 
+          echo "Temporary branch name is '$BRANCH_NAME'."
+
+          # share variables with next step.
+          echo "releaseName=$releaseName" >> "$GITHUB_ENV"
+          echo "originalName=$originalName" >> "$GITHUB_ENV"
+          echo "zipName=$zipName" >> "$GITHUB_ENV"
+          echo "tarName=$tarName" >> "$GITHUB_ENV"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
+        env:
+          version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
+      - name: Commit all changes
+        run: |
           # add all content, except output.txt (this contains the changelog and/or the download instructions)
           echo 'Add all and reset output.txt'
           git add -A
           if test -f "output.txt"; then
+            echo 'output.txt exists, reset it.'
             git reset output.txt
           fi
 
           # push to a new branch.
-
+          echo "Auto commit on branch '$(git branch --show-current)'."
           git commit -m "🤖 Auto commit for release '$version' on $(date +'%Y-%m-%d')" || true
           git push
-
-          # zip and tar everything
-          echo 'Zip and tar...'
-          zip -rq $zipName . -x "*.git*" "*.ci*" "*.github*" "*node_modules*" "*output.txt*" "*Procfile*" "*crowdin.yml*" "*sonar-project.properties*"
-          touch $tarName
-          tar --exclude=$tarName --exclude=$zipName --exclude='./.git' --exclude='./.ci' --exclude='./.github' --exclude='./node_modules' --exclude='./output.txt' --exclude='./Procfile' --exclude='../crowdin.yml' --exclude='./sonar-project.properties' -czf $tarName .
-
-          # add sha256 sum
-          echo 'Sha sum ...'
-          sha256sum -b $zipName > $zipName.sha256
-          sha256sum -b $tarName > $tarName.sha256
-
-          # add signatures:
-          gpg --armor --detach-sign $zipName
-          gpg --armor --detach-sign $tarName
-
+        env:
+          version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
+      - name: Describe new release
+        run: |
           # describe the development release.
           if [[ "develop" == "$version" ]]; then
-            echo 'Develop release.'
+            echo 'Describe the latest develop release'
             rm -f output.txt
             touch output.txt
             sudo chown -R runner:docker output.txt
@@ -161,7 +165,7 @@ jobs:
           fi
           # describe a branch release
           if [[ "$version" == branch* ]]; then
-            echo 'Branch release.'
+            echo 'Describe a branch release'
             rm -f output.txt
             touch output.txt
             sudo chown -R runner:docker output.txt
@@ -176,7 +180,8 @@ jobs:
           fi
           # describe the main release
           if [[ "develop" != "$version" ]] && [[ "$version" != branch* ]] && [[ "$version" != *alpha* ]] && [[ "$version" != *beta* ]]; then
-            echo 'Main release.'
+            echo 'Describe the latest release'
+            touch output.txt
             sudo chown -R runner:docker output.txt
             echo '' >> output.txt
             echo '### Instructions' >> output.txt
@@ -189,7 +194,7 @@ jobs:
 
           # describe alpha release
           if [[ "$version" == *alpha* ]]; then
-            echo 'ALPHA release.'
+            echo 'Describe an ALPHA release'
             rm -f output.txt
             touch output.txt
             sudo chown -R runner:docker output.txt
@@ -207,7 +212,7 @@ jobs:
 
           # describe beta release
           if [[ "$version" == *beta* ]]; then
-            echo 'BETA release.'
+            echo 'Describe a BETA release'
             rm -f output.txt
             touch output.txt
             sudo chown -R runner:docker output.txt
@@ -222,12 +227,54 @@ jobs:
             echo "* The releases are signed, and you can verify them using the [Firefly III releases PGP key](https://docs.firefly-iii.org/explanation/more-information/signatures/)." >> output.txt
 
           fi
+        env:
+          version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
+      - name: Merge all into working branch
+        run: |
+          MERGE_INTO=develop
+            if [[ "$version" == branch* ]]; then
+                MERGE_INTO=$version
+            fi
+
+          echo "Merge all changes from $BRANCH_NAME back into '$MERGE_INTO' using a PR"
+          gh pr create -B $MERGE_INTO -H $BRANCH_NAME --title "🤖 Automatic PR to merge all changes into the '$MERGE_INTO' branch." --body '🤖 Created by GitHub action'
+          gh pr merge -b "🤖 Automatically merge the PR into the $MERGE_INTO branch." -d --rebase
+
+          # pull the changes from the $MERGE_INTO branch.
+          git checkout $MERGE_INTO
+          git merge origin/$MERGE_INTO
+          git pull
+          git status
+          echo "Current branch '$(git branch --show-current)'."
+
+          exit 1
+
+        env:
+          GH_TOKEN: ${{ github.token }}
+          version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
+
+      - name: Create release
+        run: |
+          # zip and tar everything
+          echo 'Zip and tar...'
+          zip -rq $zipName . -x "*.git*" "*.ci*" "*.github*" "*node_modules*" "*output.txt*" "*Procfile*" "*crowdin.yml*" "*sonar-project.properties*"
+          touch $tarName
+          tar --exclude=$tarName --exclude=$zipName --exclude='./.git' --exclude='./.ci' --exclude='./.github' --exclude='./node_modules' --exclude='./output.txt' --exclude='./Procfile' --exclude='../crowdin.yml' --exclude='./sonar-project.properties' -czf $tarName .
+
+          # add sha256 sum
+          echo 'Sha sum ...'
+          sha256sum -b $zipName > $zipName.sha256
+          sha256sum -b $tarName > $tarName.sha256
+
+          # add signatures:
+          gpg --armor --detach-sign $zipName
+          gpg --armor --detach-sign $tarName
 
           # create a development release:
           if [[ "develop" == "$version" ]]; then
 
             # create PR and merge it right away into develop.
-            gh pr create -B develop -H $BRANCHNAME --title '🤖 Automatic PR to merge all changes into the develop branch.' --body '🤖 Created by GitHub action'
+            gh pr create -B develop -H $BRANCH_NAME --title '🤖 Automatic PR to merge all changes into the develop branch.' --body '🤖 Created by GitHub action'
             gh pr merge -b '🤖 Automatically merge the PR into the develop branch.' -d --rebase
 
             # pull the changes from the develop branch.
@@ -250,7 +297,7 @@ jobs:
           if [[ "$version" == branch* ]]; then
 
             # create a PR and merge it right away into branch-XYZ.
-            gh pr create -B $version -H $BRANCHNAME --title "🤖 Automatic PR to merge all changes into the '$version'-branch." --body '🤖 Created by GitHub action'
+            gh pr create -B $version -H $BRANCH_NAME --title "🤖 Automatic PR to merge all changes into the '$version'-branch." --body '🤖 Created by GitHub action'
             gh pr merge -b "🤖 Automatically merge the PR into the '$version'-branch." -d --rebase
 
             # pull the changes from the branch-* branch.
@@ -289,6 +336,16 @@ jobs:
             gh release upload $releaseName HEAD.txt
           else
             echo 'MAIN (real) release'
+
+            # create PR and merge it right away into develop.
+            gh pr create -B develop -H $BRANCH_NAME --title '🤖 Automatic PR to merge all changes into the develop branch.' --body '🤖 Created by GitHub action'
+            gh pr merge -b '🤖 Automatically merge the PR into the develop branch.' -d --rebase
+
+            # checkout develop and update it.
+            git checkout develop
+            git merge origin/develop
+            git pull
+
             git tag -a $releaseName -m "Here be changelog"
             git push origin $releaseName
 
@@ -304,6 +361,7 @@ jobs:
               gh release create $releaseName -F output.txt -t "$releaseName" --verify-tag
             fi
 
+            echo 'add files to release'
             # add archive files to release
             gh release upload $releaseName $zipName
             gh release upload $releaseName $tarName
@@ -329,10 +387,21 @@ jobs:
             rm -f $tarName
             rm -f $tarName.sha256
 
+            echo 'Current branch:'
+            git branch --show-current
+
+            # create a PR between develop and main.
+            echo 'create PR between develop and main'
+            gh pr create -B main -H develop --title "🤖 Automatic PR to merge all changes into the main branch." --body '🤖 Created by GitHub action'
+            echo 'checkout main'
+            git checkout main
+            echo 'merge PR'
+            gh pr merge -b "🤖 Automatically merge the PR into the main branch." -d --rebase
+
             # merge main back into develop
-            git checkout develop
-            git merge main
-            git push
+            #git checkout develop
+            #git merge main
+            #git push
           fi
         env:
           GH_TOKEN: ${{ github.token }}
