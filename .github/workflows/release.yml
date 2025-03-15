@@ -182,6 +182,7 @@ jobs:
           # describe the main release
           if [[ "develop" != "$version" ]] && [[ "$version" != branch* ]] && [[ "$version" != *alpha* ]] && [[ "$version" != *beta* ]]; then
             echo 'Main release.'
+            touch output.txt
             sudo chown -R runner:docker output.txt
             echo '' >> output.txt
             echo '### Instructions' >> output.txt
