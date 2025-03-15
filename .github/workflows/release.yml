@@ -29,25 +29,22 @@ jobs:
           passphrase: ${{ secrets.PASSPHRASE }}
           git_user_signingkey: true
           git_commit_gpgsign: true
-      - name: Switch branch
+      - name: Switch and pull
         run: |
-          echo "Version is '$version', check out 'origin/$version'-branch"
-          if [[ "develop" == "$version" ]]; then
-            git checkout --track origin/develop
-            git pull
-          elif [[ "$version" == branch* ]]; then
-            PULLBRANCH=${version:7}
-            echo "Version is '$version', check out 'origin/$version'-branch"
-            git checkout --track origin/$version
-            git pull
-          else
-            echo "Version is '$version', check out 'origin/develop'-branch"
-            git checkout --track origin/develop
-            git pull
-            # git checkout main
-            # git merge develop
+          #
+          # Always check out origin/develop, unless its a branch release.
+          #
+          BRANCH_TO_PULL=origin/develop
+          if [[ "$version" == branch* ]]; then
+            BRANCH_TO_PULL=origin/$version
           fi
+
+          echo "Version is '$version', check out '$BRANCH_TO_PULL'-branch"
+
+          git checkout --track origin/develop
+          git pull
           echo "Current branch is $(git branch --show-current)"
+          exit 1
         env:
           version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
       - name: Setup PHP
@@ -306,6 +303,11 @@ jobs:
             # create PR and merge it right away into develop.
             gh pr create -B develop -H $BRANCH_NAME --title '🤖 Automatic PR to merge all changes into the develop branch.' --body '🤖 Created by GitHub action'
             gh pr merge -b '🤖 Automatically merge the PR into the develop branch.' -d --rebase
+
+            # checkout develop and update it.
+            git checkout develop
+            git merge origin/develop
+            git pull
 
             git tag -a $releaseName -m "Here be changelog"
             git push origin $releaseName
