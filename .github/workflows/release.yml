@@ -235,10 +235,18 @@ jobs:
             fi
 
           echo "Merge all changes from $BRANCH_NAME back into '$MERGE_INTO' using a PR"
-          git status
           gh pr create -B $MERGE_INTO -H $BRANCH_NAME --title "🤖 Automatic PR to merge all changes into the '$MERGE_INTO' branch." --body '🤖 Created by GitHub action'
           gh pr merge -b "🤖 Automatically merge the PR into the $MERGE_INTO branch." -d --rebase
+
+          # pull the changes from the $MERGE_INTO branch.
+          git checkout $MERGE_INTO
+          git merge origin/$MERGE_INTO
+          git pull
+          git status
+          echo "Current branch '$(git branch --show-current)'."
+
           exit 1
+
         env:
           GH_TOKEN: ${{ github.token }}
           version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
