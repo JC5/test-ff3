@@ -257,7 +257,12 @@ jobs:
             git status
 
             echo "Also merge everything into main since this is a release."
-            gh pr create -B main -H develop --title "🤖 Automatic PR to merge all changes into the main branch." --body '🤖 Created by GitHub action'
+            echo 'create PR'
+            PR_TO_MERGE=gh pr create -B main -H develop --title "🤖 Automatic PR to merge all changes into the main branch." --body '🤖 Created by GitHub action'
+            echo "PR to merge is '$PR_TO_MERGE'"
+            exit 1
+            sleep 2
+            echo 'Merge PR'
             gh pr merge -b "🤖 Automatically merge the PR into the main branch." --rebase
             git checkout main
             git merge origin/main
