@@ -320,7 +320,7 @@ jobs:
             fi
 
           echo "Merge all changes from $BRANCH_NAME back into '$MERGE_INTO' using a PR"
-          PR_URL=(gh pr create -B $MERGE_INTO -H $BRANCH_NAME --title "🤖 Automatic PR to merge all changes into the '$MERGE_INTO' branch." --body '🤖 Created by GitHub action')
+          PR_URL=$(gh pr create -B $MERGE_INTO -H $BRANCH_NAME --title "🤖 Automatic PR to merge all changes into the '$MERGE_INTO' branch." --body '🤖 Created by GitHub action')
           echo "PR URL is '$PR_URL'"
           IFS='/' read -ra parts <<< "$PR_URL"
           PR_NR=$(printf %s\\n "${parts[@]:(-1)}")
