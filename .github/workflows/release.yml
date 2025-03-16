@@ -49,6 +49,10 @@ jobs:
           git checkout --track origin/develop
           git pull
           echo "Current branch is $(git branch --show-current)"
+
+          # add a test commit to develop
+          echo $(date) > temp-file.txt
+
         env:
           version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
       - name: Configure Git
@@ -60,8 +64,7 @@ jobs:
           git config advice.addIgnoredFile false
           git config push.autoSetupRemote true
 
-          # debug line.
-          echo $(date) > temp-file.txt
+
       - name: Update composer packages
         run: |
           composer update --no-dev --no-scripts --no-plugins
@@ -237,8 +240,8 @@ jobs:
             fi
 
           echo "Merge all changes from $BRANCH_NAME back into '$MERGE_INTO' using a PR"
-          gh pr create -B $MERGE_INTO -H $BRANCH_NAME --title "🤖 Automatic PR to merge all changes into the '$MERGE_INTO' branch." --body '🤖 Created by GitHub action'
-          gh pr merge -b "🤖 Automatically merge the PR into the $MERGE_INTO branch." -d --rebase
+          gh pr create -B $MERGE_INTO -H $BRANCH_NAME --title "🤖 Automatic PR to merge all changes into the '$MERGE_INTO' branch." --body '🤖 Created by GitHub action' || true
+          gh pr merge -b "🤖 Automatically merge the PR into the $MERGE_INTO branch." -d --rebase || true
 
           # pull the changes from the $MERGE_INTO branch.
           git checkout $MERGE_INTO
@@ -247,20 +250,33 @@ jobs:
           git status
           echo "Current branch '$(git branch --show-current)'."
 
-          exit 1
+          if [[ "develop" != "$version" ]] || [[ "$version" != branch* ]]; then
+            git checkout main
+            git merge origin/main
+            git pull
+            git status
 
+            echo "Also merge everything into main since this is a release."
+            gh pr create -B main -H develop --title "🤖 Automatic PR to merge all changes into the main branch." --body '🤖 Created by GitHub action'
+            gh pr merge -b "🤖 Automatically merge the PR into the main branch." --rebase
+            git checkout main
+            git merge origin/main
+            git pull
+            git status
+            echo "Current branch '$(git branch --show-current)'."
+          fi
+          echo "DONE!"
         env:
           GH_TOKEN: ${{ github.token }}
           version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
-
-      - name: Create release
+      - name: Create archives
         run: |
-          # zip and tar everything
-          echo 'Zip and tar...'
+          echo "Create zip file $zipName"
           zip -rq $zipName . -x "*.git*" "*.ci*" "*.github*" "*node_modules*" "*output.txt*" "*Procfile*" "*crowdin.yml*" "*sonar-project.properties*"
           touch $tarName
-          tar --exclude=$tarName --exclude=$zipName --exclude='./.git' --exclude='./.ci' --exclude='./.github' --exclude='./node_modules' --exclude='./output.txt' --exclude='./Procfile' --exclude='../crowdin.yml' --exclude='./sonar-project.properties' -czf $tarName .
 
+          echo "Create tar file $tarName"
+          tar --exclude=$tarName --exclude=$zipName --exclude='./.git' --exclude='./.ci' --exclude='./.github' --exclude='./node_modules' --exclude='./output.txt' --exclude='./Procfile' --exclude='../crowdin.yml' --exclude='./sonar-project.properties' -czf $tarName .
           # add sha256 sum
           echo 'Sha sum ...'
           sha256sum -b $zipName > $zipName.sha256
@@ -269,14 +285,13 @@ jobs:
           # add signatures:
           gpg --armor --detach-sign $zipName
           gpg --armor --detach-sign $tarName
+      - name: Create release
+        run: |
+          git status
 
+          exit 1
           # create a development release:
           if [[ "develop" == "$version" ]]; then
-
-            # create PR and merge it right away into develop.
-            gh pr create -B develop -H $BRANCH_NAME --title '🤖 Automatic PR to merge all changes into the develop branch.' --body '🤖 Created by GitHub action'
-            gh pr merge -b '🤖 Automatically merge the PR into the develop branch.' -d --rebase
-
             # pull the changes from the develop branch.
             git checkout develop
             git merge origin/develop
@@ -295,10 +310,6 @@ jobs:
 
           # create a branch release:
           if [[ "$version" == branch* ]]; then
-
-            # create a PR and merge it right away into branch-XYZ.
-            gh pr create -B $version -H $BRANCH_NAME --title "🤖 Automatic PR to merge all changes into the '$version'-branch." --body '🤖 Created by GitHub action'
-            gh pr merge -b "🤖 Automatically merge the PR into the '$version'-branch." -d --rebase
 
             # pull the changes from the branch-* branch.
             git checkout $version
@@ -336,15 +347,6 @@ jobs:
             gh release upload $releaseName HEAD.txt
           else
             echo 'MAIN (real) release'
-
-            # create PR and merge it right away into develop.
-            gh pr create -B develop -H $BRANCH_NAME --title '🤖 Automatic PR to merge all changes into the develop branch.' --body '🤖 Created by GitHub action'
-            gh pr merge -b '🤖 Automatically merge the PR into the develop branch.' -d --rebase
-
-            # checkout develop and update it.
-            git checkout develop
-            git merge origin/develop
-            git pull
 
             git tag -a $releaseName -m "Here be changelog"
             git push origin $releaseName
