@@ -65,10 +65,6 @@ jobs:
 
           # debug line.
           # echo $(date) > temp-file.txt
-      - name: Update composer packages
-        run: |
-          composer update --no-dev --no-scripts --no-plugins
-          composer dump-autoload
       - name: Calculate variables
         run: |
 
@@ -260,18 +256,20 @@ jobs:
             echo 'create PR'
             PR_URL=$(gh pr create -B main -H develop --title "🤖 Automatic PR to merge all changes into the main branch." --body "🤖 Created by GitHub action")
             echo "PR URL is '$PR_URL'"
-            parts=$(echo $PR_URL | tr "/" "\n")
+
+            IFS='/' read -ra parts <<< "$PR_URL"
             PR_NR=$(printf %s\\n "${parts[@]:(-1)}")
             echo "PR number is '$PR_NR'"
-            exit 1
-            sleep 2
+
             echo 'Merge PR'
-            gh pr merge -b "🤖 Automatically merge the PR into the main branch." --rebase
+            gh pr merge $PR_UR -b "🤖 Automatically merge the PR into the main branch." --rebase
             git checkout main
             git merge origin/main
             git pull
             git status
             echo "Current branch '$(git branch --show-current)'."
+            exit 1
+
           fi
           echo "DONE!"
         env:
