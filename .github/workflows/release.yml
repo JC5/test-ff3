@@ -46,7 +46,7 @@ jobs:
 
           echo "Version is '$version', check out '$BRANCH_TO_PULL'-branch"
 
-          git checkout --track origin/develop
+          git checkout --track $BRANCH_TO_PULL
           git pull
           echo "Current branch is $(git branch --show-current)"
 
