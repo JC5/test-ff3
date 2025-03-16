@@ -321,7 +321,7 @@ jobs:
 
           echo "Merge all changes from $BRANCH_NAME back into '$MERGE_INTO' using a PR"
           gh pr create -B $MERGE_INTO -H $BRANCH_NAME --title "🤖 Automatic PR to merge all changes into the '$MERGE_INTO' branch." --body '🤖 Created by GitHub action' || true
-          gh pr merge -b "🤖 Automatically merge the PR into the $MERGE_INTO branch." -d || true
+          gh pr merge -b "🤖 Automatically merge the PR into the $MERGE_INTO branch." -d --merge || true
 
           # pull the changes from the $MERGE_INTO branch.
           git checkout $MERGE_INTO
