@@ -258,7 +258,7 @@ jobs:
 
             echo "Also merge everything into main since this is a release."
             echo 'create PR'
-            PR_TO_MERGE=$(gh pr create -B main -H develop --title "🤖 Automatic PR to merge all changes into the main branch." --body '🤖 Created by GitHub action')
+            PR_TO_MERGE=$(gh pr create -B main -H develop --title "🤖 Automatic PR to merge all changes into the main branch." --body "🤖 Created by GitHub action")
             echo "PR to merge is '$PR_TO_MERGE'"
             exit 1
             sleep 2
