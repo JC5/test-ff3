@@ -50,9 +50,8 @@ jobs:
           git pull
           echo "Current branch is $(git branch --show-current)"
 
-          # add a test commit to develop
+          echo 'Add test change'
           echo $(date) > temp-file.txt
-
         env:
           version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
       - name: Configure Git
