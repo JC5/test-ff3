@@ -265,7 +265,6 @@ jobs:
             git pull
             git status
             echo "Current branch '$(git branch --show-current)'."
-            exit 1
 
           fi
           echo "DONE!"
@@ -308,8 +307,6 @@ jobs:
               --latest=false \
               -F output.txt
 
-            # continue with next step
-            exit 0
           fi
 
           # create a branch release:
@@ -330,8 +327,6 @@ jobs:
               --latest=false \
               -F output.txt
 
-            # continue with next step
-            exit 0
           fi
 
           # Create a production release.
