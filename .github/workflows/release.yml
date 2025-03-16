@@ -260,7 +260,7 @@ jobs:
             echo 'create PR'
             PR_URL=$(gh pr create -B main -H develop --title "🤖 Automatic PR to merge all changes into the main branch." --body "🤖 Created by GitHub action")
             echo "PR URL is '$PR_URL'"
-            parts=$(echo $PR_URL | tr ";" "\n")
+            parts=$(echo $PR_URL | tr "/" "\n")
             PR_NR=${parts[-1]}
             echo "PR number is '$PR_NR'"
             exit 1
@@ -314,6 +314,9 @@ jobs:
               -t "Development release for $(date +'%Y-%m-%d')" \
               --latest=false \
               -F output.txt
+
+            # continue with next step
+            exit 0
           fi
 
           # create a branch release:
@@ -333,7 +336,12 @@ jobs:
               -t "Branch release for $(date +'%Y-%m-%d')" \
               --latest=false \
               -F output.txt
+
+            # continue with next step
+            exit 0
           fi
+
+          # TODO create a production release.
 
           # create a development (nightly) release:
           if [[ "develop" == "$version" ]] || [[ "$version" == branch* ]]; then
