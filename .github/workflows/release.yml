@@ -261,7 +261,7 @@ jobs:
             PR_URL=$(gh pr create -B main -H develop --title "🤖 Automatic PR to merge all changes into the main branch." --body "🤖 Created by GitHub action")
             echo "PR URL is '$PR_URL'"
             parts=$(echo $PR_URL | tr "/" "\n")
-            PR_NR=${parts[${#parts[@]}-1]}
+            PR_NR=$(printf %s\\n "${parts[@]:(-1)}")
             echo "PR number is '$PR_NR'"
             exit 1
             sleep 2
@@ -404,22 +404,6 @@ jobs:
             rm -f $zipName.sha256
             rm -f $tarName
             rm -f $tarName.sha256
-
-            echo 'Current branch:'
-            git branch --show-current
-
-            # create a PR between develop and main.
-            echo 'create PR between develop and main'
-            gh pr create -B main -H develop --title "🤖 Automatic PR to merge all changes into the main branch." --body '🤖 Created by GitHub action'
-            echo 'checkout main'
-            git checkout main
-            echo 'merge PR'
-            gh pr merge -b "🤖 Automatically merge the PR into the main branch." -d --rebase
-
-            # merge main back into develop
-            #git checkout develop
-            #git merge main
-            #git push
           fi
         env:
           GH_TOKEN: ${{ github.token }}
