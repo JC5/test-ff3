@@ -290,9 +290,7 @@ jobs:
           gpg --armor --detach-sign $tarName
       - name: Create release
         run: |
-          git status
 
-          exit 1
           # create a development release:
           if [[ "develop" == "$version" ]]; then
             # pull the changes from the develop branch.
@@ -303,8 +301,8 @@ jobs:
             # create the release:
             echo "Create develop release under tag '$releaseName'."
             git tag -a $releaseName -m "🤖 Development release '$version' on $(date +'%Y-%m-%d')"
-
             git push origin $releaseName
+
             gh release create $releaseName -p --verify-tag \
               -t "Development release for $(date +'%Y-%m-%d')" \
               --latest=false \
@@ -325,8 +323,8 @@ jobs:
             # create the release:
             echo "Create branch release."
             git tag -a $releaseName -m "Branch release '$version' on $(date +'%Y-%m-%d')"
-
             git push origin $releaseName
+
             gh release create $releaseName -p --verify-tag \
               -t "Branch release for $(date +'%Y-%m-%d')" \
               --latest=false \
@@ -336,30 +334,15 @@ jobs:
             exit 0
           fi
 
-          # TODO create a production release.
+          # Create a production release.
+          if [[ "develop" != "$version" ]] || [[ "$version" != branch* ]]; then
+            git checkout main
+            git merge origin/main
+            git pull
+            git status
 
-          # create a development (nightly) release:
-          if [[ "develop" == "$version" ]] || [[ "$version" == branch* ]]; then
-            # add zip file to release.
-            gh release upload $releaseName $zipName
-            gh release upload $releaseName $tarName
-
-            # add sha256 sum to release
-            gh release upload $releaseName $zipName.sha256
-            gh release upload $releaseName $tarName.sha256
-
-            # add signatures to release
-            gh release upload $releaseName $zipName.asc
-            gh release upload $releaseName $tarName.asc
-
-            # get current HEAD and add as file to the release
-            HEAD=$(git rev-parse HEAD)
-            echo $HEAD > HEAD.txt
-            gh release upload $releaseName HEAD.txt
-          else
-            echo 'MAIN (real) release'
-
-            git tag -a $releaseName -m "Here be changelog"
+            echo "Create prod release."
+            git tag -a $releaseName -m "Release $version"
             git push origin $releaseName
 
             # do not tag as latest when alpha or beta.
@@ -371,35 +354,38 @@ jobs:
             # tag as latest when NOT alpha or beta.
             if [[ "$version" != *alpha* ]] && [[ "$version" != *beta* ]]; then
               echo 'Mark prod as the latest.'
-              gh release create $releaseName -F output.txt -t "$releaseName" --verify-tag
+              gh release create $releaseName -F output.txt -t "$releaseName" --verify-tag --latest=true
             fi
-
-            echo 'add files to release'
-            # add archive files to release
-            gh release upload $releaseName $zipName
-            gh release upload $releaseName $tarName
-
-            # add sha256 sums to release
-            gh release upload $releaseName $zipName.sha256
-            gh release upload $releaseName $tarName.sha256
-
-            # add signatures to release
-            gh release upload $releaseName $zipName.asc
-            gh release upload $releaseName $tarName.asc
-
-            # get current HEAD and add as file to the release
-            HEAD=$(git rev-parse HEAD)
-            echo $HEAD > HEAD.txt
-            gh release upload $releaseName HEAD.txt
-
-            # remove all temporary files
-            rm -f output.txt
-            rm -f HEAD.txt
-            rm -f $zipName
-            rm -f $zipName.sha256
-            rm -f $tarName
-            rm -f $tarName.sha256
           fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+          version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
+      - name: Upload artifacts
+        run: |
+          # add zip file to release.
+          gh release upload $releaseName $zipName
+          gh release upload $releaseName $tarName
+
+          # add sha256 sum to release
+          gh release upload $releaseName $zipName.sha256
+          gh release upload $releaseName $tarName.sha256
+
+          # add signatures to release
+          gh release upload $releaseName $zipName.asc
+          gh release upload $releaseName $tarName.asc
+
+          # get current HEAD and add as file to the release
+          HEAD=$(git rev-parse HEAD)
+          echo $HEAD > HEAD.txt
+          gh release upload $releaseName HEAD.txt
+
+          # remove all temporary files
+          rm -f output.txt
+          rm -f HEAD.txt
+          rm -f $zipName
+          rm -f $zipName.sha256
+          rm -f $tarName
+          rm -f $tarName.sha256
         env:
           GH_TOKEN: ${{ github.token }}
           version: ${{ github.event_name == 'schedule' && 'develop' || github.event.inputs.version }}
