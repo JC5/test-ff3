@@ -62,12 +62,6 @@ jobs:
           git config user.email release@firefly-iii.org
           git config advice.addIgnoredFile false
           git config push.autoSetupRemote true
-
-
-      - name: Update composer packages
-        run: |
-          composer update --no-dev --no-scripts --no-plugins
-          composer dump-autoload
       - name: Calculate variables
         run: |
 
@@ -256,13 +250,23 @@ jobs:
             git status
 
             echo "Also merge everything into main since this is a release."
-            gh pr create -B main -H develop --title "🤖 Automatic PR to merge all changes into the main branch." --body '🤖 Created by GitHub action'
-            gh pr merge -b "🤖 Automatically merge the PR into the main branch." --rebase
+            echo 'create PR'
+            PR_URL=$(gh pr create -B main -H develop --title "🤖 Automatic PR to merge all changes into the main branch." --body "🤖 Created by GitHub action")
+            echo "PR URL is '$PR_URL'"
+
+            IFS='/' read -ra parts <<< "$PR_URL"
+            PR_NR=$(printf %s\\n "${parts[@]:(-1)}")
+            echo "PR number is '$PR_NR'"
+
+            echo 'Merge PR'
+            gh pr merge $PR_UR -b "🤖 Automatically merge the PR into the main branch." --rebase
             git checkout main
             git merge origin/main
             git pull
             git status
             echo "Current branch '$(git branch --show-current)'."
+            exit 1
+
           fi
           echo "DONE!"
         env:
@@ -305,6 +309,9 @@ jobs:
               -t "Development release for $(date +'%Y-%m-%d')" \
               --latest=false \
               -F output.txt
+
+            # continue with next step
+            exit 0
           fi
 
           # create a branch release:
@@ -324,7 +331,12 @@ jobs:
               -t "Branch release for $(date +'%Y-%m-%d')" \
               --latest=false \
               -F output.txt
+
+            # continue with next step
+            exit 0
           fi
+
+          # TODO create a production release.
 
           # create a development (nightly) release:
           if [[ "develop" == "$version" ]] || [[ "$version" == branch* ]]; then
@@ -387,22 +399,6 @@ jobs:
             rm -f $zipName.sha256
             rm -f $tarName
             rm -f $tarName.sha256
-
-            echo 'Current branch:'
-            git branch --show-current
-
-            # create a PR between develop and main.
-            echo 'create PR between develop and main'
-            gh pr create -B main -H develop --title "🤖 Automatic PR to merge all changes into the main branch." --body '🤖 Created by GitHub action'
-            echo 'checkout main'
-            git checkout main
-            echo 'merge PR'
-            gh pr merge -b "🤖 Automatically merge the PR into the main branch." -d --rebase
-
-            # merge main back into develop
-            #git checkout develop
-            #git merge main
-            #git push
           fi
         env:
           GH_TOKEN: ${{ github.token }}
