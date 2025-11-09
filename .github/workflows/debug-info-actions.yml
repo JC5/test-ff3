@@ -38,7 +38,7 @@ jobs:
 
           This X is an automated reply. \`Share and enjoy\`
 
-          You triggered an automated reply, because it looks like you're not running Firefly III version **'"${{ steps.ff3version.outputs.release }}"'** or version **'"${{ steps.importerversion.outputs.release }}"'** of the data importer.
+          You triggered an automated reply, because it looks like you're not running Firefly III version **${{ steps.ff3version.outputs.release }}** or version **${{ steps.importerversion.outputs.release }}** of the data importer.
 
           Please be so kind as to include the output from the \`/debug\`-page, if you have not done so already. If you already the debug information, plase make sure to upgrade to the latest version of Firefly III (or the data importer) *first*. This may already solve your issue.
 
