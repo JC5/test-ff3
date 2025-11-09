@@ -43,7 +43,7 @@ jobs:
           Please be so kind as to include the output from the \`/debug\`-page, if you have not done so already. If you already the debug information, plase make sure to upgrade to the latest version of Firefly III (or the data importer) *first*. This may already solve your issue.
 
           If you are running the latest version, my apologies for the intrusion."
-            gh issue comment "$NUMBER" --body $MESSAGE
+            gh issue comment "$NUMBER" --body "$MESSAGE"
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
