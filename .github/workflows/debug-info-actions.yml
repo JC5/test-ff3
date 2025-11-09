@@ -1,4 +1,4 @@
-name: 'Issues - Respond to hidden commands'
+name: 'Issues - Respond to old versions'
 
 # the workflow to execute on is comments that are newly created
 on:
@@ -18,11 +18,17 @@ jobs:
   respond:
     runs-on: ubuntu-latest
     steps:
+      - id: ff3version
+        uses: pozetroninc/github-action-get-latest-release@master
+        with:
+          owner: firefly-iii
+          repo: firefly-iii
+          excludes: prerelease, draft
+          token: ${{ secrets.GITHUB_TOKEN }}
       - run: |
           ISSUE_BODY=$(gh issue view $NUMBER --json body)
-          if [[ $ISSUE_BODY == *".eOxNZAmyGz6CXMyf"* ]]; then
-            gh issue comment "$NUMBER" --body "$V2_ISSUE_REPLY_BODY"
-            gh issue close "$NUMBER" --reason completed
+          if [[ $ISSUE_BODY != *${{ steps.ff3version.outputs.release }}* ]]; then
+            gh issue comment "$NUMBER" --body "I am a test reply because it looks like you're not running v${{ steps.ff3version.outputs.release }}."
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -30,3 +36,4 @@ jobs:
           NUMBER: ${{ github.event.issue.number }}
           V2_ISSUE_REPLY_BODY: ${{ secrets.V2_ISSUE_REPLY_BODY }}
           LABELS: v2-layout-issue
+
