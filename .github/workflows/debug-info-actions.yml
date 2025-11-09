@@ -35,7 +35,7 @@ jobs:
       - run: |
           ISSUE_BODY=$(gh issue view $NUMBER --json body)
           if [[ $ISSUE_BODY != *${{ steps.ff3version.outputs.release }}* && $ISSUE_BODY != *${{ steps.importerversion.outputs.release }}* ]]; then
-            gh issue comment "$NUMBER" --body "Hi!\\n\\nThis is an automated reply. `Share and enjoy`\\n\\nYou triggered an automated reply, because it looks like you're not running Firefly III ${{ steps.ff3version.outputs.release }}, nor ${{ steps.importerversion.outputs.release }} of the data importer."
+            gh issue comment "$NUMBER" --body "Hi!\\n\\nThis is an automated reply. `Share and enjoy`\\n\\nYou triggered an automated reply, because it looks like you're not running Firefly III **${{ steps.ff3version.outputs.release }}**, nor **${{ steps.importerversion.outputs.release }}** of the data importer."
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
