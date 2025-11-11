@@ -46,10 +46,10 @@ jobs:
           # first test: no debug info OR old version for issue type BUG
           if [[ $ISSUE_BODY == *"MZ2udTpin6FL"* && $ISSUE_BODY != *"Debug information generated at"* ]]; then
             MESSAGE="Hi there!
-
+          
           This is an automated reply. \`Share and enjoy\`
 
-          You triggered an automated reply, because it looks like you didn't include the output from the `/debug` page. Would you be so kind as to do that? It helps the developers debug your issue more easily.
+          You triggered an automated reply, because it looks like you didn't include the output from the \`/debug\` page. Would you be so kind as to do that? It helps the developers debug your issue more easily.
 
           If you did include debug information, and this message is wrong, my apologies for the intrusion."
 
