@@ -48,7 +48,7 @@ jobs:
 
           There cannot be interaction with your PR without this disclosure. 
           
-          If the disclosure is present but the bot did not pick up on it, please accept my apologies for the intrusion. Contrary to other bots, this one is just a simple \`bash\`-script and it may be wrong."
+          If the disclosure is present but the bot did not pick up on it, please accept my apologies for the intrusion. Contrary to other bots, this one is just a simple \`bash\` script and it may be wrong."
 
             gh pr comment "$NUMBER" --body "$MESSAGE"
             echo "Triggered on AI disclosure missing."
