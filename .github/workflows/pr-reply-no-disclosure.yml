@@ -17,17 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          ISSUE_BODY=$(gh issue view $NUMBER --json body)
+          ISSUE_BODY=$(gh pr view $NUMBER --json body)
 
           echo $ISSUE_BODY
           exit 1
 
-          # sure this can be done in a single step but still.
-          FFNOV="${{ steps.ff3version.outputs.release }}"
-          FFNOV="${FFNOV:1}"
-
-          DDNOV="${{ steps.importerversion.outputs.release }}"
-          DDNOV="${DDNOV:1}"
 
           echo "Firefly III version is ${{ steps.ff3version.outputs.release }}, without v is $FFNOV"
           echo "Data importer version is ${{ steps.ff3version.outputs.release }}, without v is $DDNOV"
@@ -101,4 +95,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          NUMBER: ${{ github.event.issue.number }}
+          NUMBER: ${{ github.event.pull_request.number }}
