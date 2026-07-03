@@ -1,4 +1,5 @@
 <?php
+// PR by a stranger.
 
 /**
  * Kernel.php
