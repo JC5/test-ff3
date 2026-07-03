@@ -75,5 +75,6 @@ jobs:
           echo "It has the disclosure"
         env:
           NUMBER: ${{ github.event.pull_request.number }}
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
